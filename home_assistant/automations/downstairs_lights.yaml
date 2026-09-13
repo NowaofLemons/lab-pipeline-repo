@@ -1,0 +1,153 @@
+alias: Automatic Lights - Downstairs
+description: ""
+triggers:
+  - trigger: state
+    entity_id:
+      - binary_sensor.hue_motion_sensor_1_motion_2
+    to: "on"
+    id: EntrywayMotion
+  - trigger: state
+    entity_id:
+      - binary_sensor.hue_motion_sensor_1_motion
+    to: "on"
+    id: KitchenMotion
+  - trigger: state
+    entity_id:
+      - binary_sensor.hue_motion_sensor_1_motion_3
+    to: "on"
+    id: LivingRoomMotion
+  - trigger: state
+    entity_id:
+      - lock.front_door
+    to: unlocked
+    id: FrontDoorUnlocked
+  - trigger: time_pattern
+    minutes: "30"
+    id: TimeInterval
+conditions:
+  - condition: state
+    entity_id: input_boolean.pause_light_automations
+    state: "off"
+actions:
+  - choose:
+      - alias: Turn on Kitchen & Living Room Lights
+        conditions:
+          - condition: trigger
+            id:
+              - KitchenMotion
+              - LivingRoomMotion
+        sequence:
+          - if:
+              - condition: state
+                entity_id: input_boolean.kitchen_pause_light_automations
+                state: "off"
+            then:
+              - action: adaptive_lighting.apply
+                data:
+                  entity_id: switch.adaptive_lighting_downstairs
+                  lights:
+                    - light.hue_kitchen_sink
+                    - light.hue_kitchen_table
+                  turn_on_lights: true
+                  transition: 3
+                  adapt_brightness: true
+                  adapt_color: true
+              - action: adaptive_lighting.set_manual_control
+                data:
+                  manual_control: false
+                  entity_id: switch.adaptive_lighting_downstairs
+                  lights:
+                    - light.hue_kitchen_sink
+                    - light.hue_kitchen_table
+          - if:
+              - condition: state
+                entity_id: input_boolean.living_room_pause_light_automations
+                state: "off"
+            then:
+              - action: adaptive_lighting.apply
+                data:
+                  entity_id: switch.adaptive_lighting_entertainment_center
+                  turn_on_lights: true
+                  transition: 3
+                  adapt_brightness: true
+                  adapt_color: true
+              - action: light.turn_on
+                target:
+                  entity_id: light.hue_livingroom_orblamp
+              - action: adaptive_lighting.set_manual_control
+                data:
+                  manual_control: false
+                  entity_id: switch.adaptive_lighting_entertainment_center
+      - alias: Turn on Entryway Lights
+        conditions:
+          - condition: trigger
+            id:
+              - EntrywayMotion
+              - FrontDoorUnlocked
+        sequence:
+          - if:
+              - condition: state
+                entity_id: input_boolean.entryway_pause_light_automations
+                state: "off"
+            then:
+              - action: adaptive_lighting.apply
+                data:
+                  entity_id: switch.adaptive_lighting_downstairs
+                  lights:
+                    - light.hue_entryway_overhead_light_1
+                    - light.hue_entryway_overhead_light_2
+                    - light.hue_entryway_overhead_light_3
+                    - light.hue_entryway_overhead_light_4
+                  turn_on_lights: true
+                  transition: 3
+                  adapt_brightness: true
+                  adapt_color: true
+              - action: adaptive_lighting.set_manual_control
+                data:
+                  manual_control: false
+                  entity_id: switch.adaptive_lighting_downstairs
+                  lights:
+                    - light.hue_entryway_overhead_light_1
+                    - light.hue_entryway_overhead_light_2
+                    - light.hue_entryway_overhead_light_3
+                    - light.hue_entryway_overhead_light_4
+      - alias: Turn off lights after inactivity
+        conditions:
+          - condition: trigger
+            id:
+              - TimeInterval
+          - condition: state
+            entity_id: binary_sensor.hue_motion_sensor_1_motion
+            state: "off"
+            for:
+              hours: 0
+              minutes: 30
+              seconds: 0
+          - condition: state
+            entity_id: binary_sensor.hue_motion_sensor_1_motion_2
+            state: "off"
+            for:
+              hours: 0
+              minutes: 30
+              seconds: 0
+          - condition: state
+            entity_id: binary_sensor.hue_motion_sensor_1_motion_3
+            state: "off"
+            for:
+              hours: 0
+              minutes: 30
+              seconds: 0
+        sequence:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.movie_mode
+          - action: light.turn_off
+            data:
+              transition: 10
+            target:
+              area_id:
+                - kitchen
+                - sitting_room
+                - entrance
+                - living_room
+mode: single
